@@ -1,0 +1,111 @@
+# Qt-generated files
+*.pro.user
+*.pro.user.*
+*.qbs.user
+*.qbs.user.*
+*.moc
+moc_*.cpp
+moc_*.h
+qrc_*.cpp
+ui_*.h
+*.qm
+.qmake.cache
+.qmake.stash
+Makefile
+Makefile.*
+
+# Qt Creator
+*.autosave
+.qtcreator
+*.creator.user*
+
+# C++ objects and libs
+*.o
+*.a
+*.so
+*.so.*
+*.dll
+*.dylib
+*.la
+*.lai
+*.exe
+*.out
+*.app
+
+# Compiled Dynamic libraries
+*.dylib
+
+# Fortran module files
+*.mod
+*.smod
+
+# Compiled Static libraries
+*.lai
+*.la
+*.a
+*.lib
+
+# Executables
+*.exe
+*.out
+*.app
+NetworkSniffer
+sniffer
+
+# Qt meta object compiler intermediate files
+moc_predefs.h
+
+# Debug and Release directories
+debug/
+release/
+Debug/
+Release/
+
+# Build directories
+build-*/
+build/
+bin/
+obj/
+
+# IDE specific files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS specific files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+Desktop.ini
+
+# Generated files
+*.autosave
+*.moc
+ui_*.h
+
+# Temporary files
+*.tmp
+*.temp
+*.log
+*.bak
+
+# PCAP files (optional - uncomment if you don't want to commit captures)
+# *.pcap
+# *.pcapng
+
+# Android build artifacts
+android-build/
+*.apk
+*.ap_
+*.dex
+classes.dex
+
+# Local configuration
+*.local
+local.properties
