@@ -1,7 +1,4 @@
 #include "mainwindow.h"
-#include "ui_mainwindow.h"
-#include <QMessageBox>
-#include <QScrollBar>
 #include <QNetworkInterface>
 #include <QFileDialog>
 #include <QFile>
@@ -9,24 +6,18 @@
 #include <QDateTime>
 #include <QFileInfo>
 #include <QDir>
+#include <QStandardPaths>
+#include <QDebug>
 
-MainWindow::MainWindow(QWidget *parent) :
-    QMainWindow(parent),
-    ui(new Ui::MainWindow),
+MainWindow::MainWindow(QObject *parent) :
+    QObject(parent),
     sniffer(new PacketSniffer(this)),
-    packetModel(new PacketModel(this))
+    packetModel(new PacketModel(this)),
+    m_statusMessage("Ready")
 {
-    ui->setupUi(this);
-    setupUI();
-    
-    connect(ui->startButton, &QPushButton::clicked, this, &MainWindow::onStartCapture);
-    connect(ui->stopButton, &QPushButton::clicked, this, &MainWindow::onStopCapture);
-    connect(ui->clearButton, &QPushButton::clicked, this, &MainWindow::onClearPackets);
-    connect(ui->saveButton, &QPushButton::clicked, this, &MainWindow::onSaveToPcap);
-    
     connect(sniffer, &PacketSniffer::packetReceived, this, &MainWindow::onPacketReceived);
-    connect(ui->packetTableView, &QTableView::clicked, this, &MainWindow::onPacketSelected);
     
+    loadNetworkInterfaces();
     updateStatus("Ready");
 }
 
@@ -35,35 +26,33 @@ MainWindow::~MainWindow()
     if (sniffer->isCapturing()) {
         sniffer->stopCapture();
     }
-    delete ui;
 }
 
-void MainWindow::setupUI()
+bool MainWindow::isCapturing() const
 {
-    ui->packetTableView->setModel(packetModel);
-    ui->packetTableView->setSelectionBehavior(QAbstractItemView::SelectRows);
-    ui->packetTableView->setSelectionMode(QAbstractItemView::SingleSelection);
-    ui->packetTableView->horizontalHeader()->setStretchLastSection(true);
-    
-    ui->stopButton->setEnabled(false);
-    
-    loadNetworkInterfaces();
+    return sniffer->isCapturing();
 }
 
 void MainWindow::loadNetworkInterfaces()
 {
-    ui->interfaceComboBox->clear();
+    m_networkInterfaces.clear();
     
     QList<QNetworkInterface> interfaces = QNetworkInterface::allInterfaces();
     
     if (interfaces.isEmpty()) {
-        ui->interfaceComboBox->addItem("No interfaces found");
-        ui->startButton->setEnabled(false);
+        QVariantMap item;
+        item["display"] = "No interfaces found";
+        item["value"] = "";
+        m_networkInterfaces.append(item);
+        emit networkInterfacesChanged();
         return;
     }
     
 #ifdef LINUX_PLATFORM
-    ui->interfaceComboBox->addItem("any");
+    QVariantMap anyItem;
+    anyItem["display"] = "any";
+    anyItem["value"] = "any";
+    m_networkInterfaces.append(anyItem);
 #endif
     
     for (const QNetworkInterface &iface : interfaces) {
@@ -77,112 +66,112 @@ void MainWindow::loadNetworkInterfaces()
                 displayName += QString(" (%1)").arg(addresses.first().ip().toString());
             }
             
-            ui->interfaceComboBox->addItem(displayName, iface.name());
+            QVariantMap item;
+            item["display"] = displayName;
+            item["value"] = iface.name();
+            m_networkInterfaces.append(item);
         }
     }
     
     for (const QNetworkInterface &iface : interfaces) {
         if (iface.flags().testFlag(QNetworkInterface::IsLoopBack)) {
             QString displayName = iface.name() + " (loopback)";
-            ui->interfaceComboBox->addItem(displayName, iface.name());
+            
+            QVariantMap item;
+            item["display"] = displayName;
+            item["value"] = iface.name();
+            m_networkInterfaces.append(item);
         }
     }
     
-    if (ui->interfaceComboBox->count() == 0) {
-        ui->interfaceComboBox->addItem("No active interfaces");
-        ui->startButton->setEnabled(false);
+    if (m_networkInterfaces.isEmpty()) {
+        QVariantMap item;
+        item["display"] = "No active interfaces";
+        item["value"] = "";
+        m_networkInterfaces.append(item);
     }
+    
+    emit networkInterfacesChanged();
 }
 
-void MainWindow::onStartCapture()
+void MainWindow::startCapture(const QString &interface)
 {
-    QString interface = ui->interfaceComboBox->currentData().toString();
-    
-    if (interface.isEmpty()) {
-        interface = ui->interfaceComboBox->currentText();
-    }
-    
     if (interface.isEmpty() || interface.contains("No")) {
-        QMessageBox::warning(this, "Warning", "Please select a valid network interface");
+        updateStatus("Error: Please select a valid network interface");
         return;
     }
     
     if (sniffer->startCapture(interface)) {
-        ui->startButton->setEnabled(false);
-        ui->stopButton->setEnabled(true);
-        ui->interfaceComboBox->setEnabled(false);
+        emit capturingChanged();
         updateStatus("Capturing packets on " + interface);
     } else {
-        QMessageBox::critical(this, "Error", 
-            "Failed to start capture. Make sure you have the required permissions.");
+        updateStatus("Error: Failed to start capture. Check permissions.");
     }
 }
 
-void MainWindow::onStopCapture()
+void MainWindow::stopCapture()
 {
     sniffer->stopCapture();
-    ui->startButton->setEnabled(true);
-    ui->stopButton->setEnabled(false);
-    ui->interfaceComboBox->setEnabled(true);
+    emit capturingChanged();
     updateStatus("Capture stopped");
 }
 
-void MainWindow::onClearPackets()
+void MainWindow::clearPackets()
 {
     packetModel->clear();
-    ui->detailsTextEdit->clear();
+    m_packetDetails.clear();
+    emit packetDetailsChanged();
     updateStatus("Packets cleared");
 }
 
 void MainWindow::onPacketReceived(const PacketInfo &packet)
 {
     packetModel->addPacket(packet);
-    
-    // Auto-scroll to bottom
-    ui->packetTableView->scrollToBottom();
 }
 
-void MainWindow::onPacketSelected(const QModelIndex &index)
+void MainWindow::selectPacket(int index)
 {
-    if (!index.isValid()) {
+    if (index < 0 || index >= packetModel->rowCount()) {
         return;
     }
     
-    PacketInfo packet = packetModel->getPacket(index.row());
+    PacketInfo packet = packetModel->getPacket(index);
     
-    QString details;
-    details += "Packet Details:\n";
-    details += "================\n\n";
-    details += QString("No: %1\n").arg(packet.number);
-    details += QString("Time: %1\n").arg(packet.timestamp);
-    details += QString("Source: %1:%2\n").arg(packet.source).arg(packet.srcPort);
-    details += QString("Destination: %1:%2\n").arg(packet.destination).arg(packet.dstPort);
-    details += QString("Protocol: %1\n").arg(packet.protocol);
-    details += QString("Length: %1 bytes\n").arg(packet.length);
-    details += QString("\nInfo: %1\n").arg(packet.info);
-    details += QString("\nRaw Data (hex):\n%1\n").arg(packet.data);
+    m_packetDetails.clear();
+    m_packetDetails += "Packet Details:\n";
+    m_packetDetails += "================\n\n";
+    m_packetDetails += QString("No: %1\n").arg(packet.number);
+    m_packetDetails += QString("Time: %1\n").arg(packet.timestamp);
+    m_packetDetails += QString("Source: %1:%2\n").arg(packet.source).arg(packet.srcPort);
+    m_packetDetails += QString("Destination: %1:%2\n").arg(packet.destination).arg(packet.dstPort);
+    m_packetDetails += QString("Protocol: %1\n").arg(packet.protocol);
+    m_packetDetails += QString("Length: %1 bytes\n").arg(packet.length);
+    m_packetDetails += QString("\nInfo: %1\n").arg(packet.info);
+    m_packetDetails += QString("\nRaw Data (hex):\n%1\n").arg(packet.data);
     
-    ui->detailsTextEdit->setPlainText(details);
+    emit packetDetailsChanged();
 }
 
 void MainWindow::updateStatus(const QString &message)
 {
-    ui->statusBar->showMessage(message);
+    m_statusMessage = message;
+    emit statusMessageChanged();
 }
 
-void MainWindow::onSaveToPcap()
+void MainWindow::saveToPcap()
 {
     QList<PacketInfo> packets = packetModel->getAllPackets();
     
     if (packets.isEmpty()) {
-        QMessageBox::warning(this, "Warning", "No packets to save");
+        updateStatus("Warning: No packets to save");
         return;
     }
     
+    QString defaultPath = QStandardPaths::writableLocation(QStandardPaths::HomeLocation) + "/capture.pcap";
     QString filename = QFileDialog::getSaveFileName(
-        this,
+        nullptr,
         "Save Capture File",
-        QDir::homePath() + "/capture.pcap",
+        defaultPath,
         "PCAP Files (*.pcap);;All Files (*)"
     );
     
@@ -191,14 +180,11 @@ void MainWindow::onSaveToPcap()
     }
     
     if (writePcapFile(filename, packets)) {
-        QMessageBox::information(this, "Success", 
-            QString("Successfully saved %1 packets to %2")
-                .arg(packets.size())
-                .arg(QFileInfo(filename).fileName()));
-        updateStatus(QString("Saved %1 packets to file").arg(packets.size()));
+        updateStatus(QString("Success: Saved %1 packets to %2")
+            .arg(packets.size())
+            .arg(QFileInfo(filename).fileName()));
     } else {
-        QMessageBox::critical(this, "Error", "Failed to save capture file");
-        updateStatus("Failed to save capture file");
+        updateStatus("Error: Failed to save capture file");
     }
 }
 

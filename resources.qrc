@@ -1,4 +1,7 @@
 <RCC>
     <qresource prefix="/">
+        <file>main.qml</file>
+        <file>HeaderCell.qml</file>
+        <file>TableCell.qml</file>
     </qresource>
 </RCC>

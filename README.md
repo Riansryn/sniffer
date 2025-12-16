@@ -2,27 +2,34 @@
 
 A simple Wireshark-like network packet sniffer built with Qt5 and C++, supporting both Linux and Android platforms.
 
-![Version](https://img.shields.io/badge/version-1.0-blue)
+![Version](https://img.shields.io/badge/version-2.1.0-blue)
 ![Qt](https://img.shields.io/badge/Qt-5.15-green)
 ![Platform](https://img.shields.io/badge/platform-Linux%20%7C%20Android-lightgrey)
 
 ## Features
 
 - ✅ Real-time packet capture and display
-- ✅ Automatic network interface detection
+- ✅ Automatic network interface detection (including "any" with real interface names)
+- ✅ **Interface column** showing actual network interface per packet
+- ✅ **Unix epoch timestamps** with microsecond precision
+- ✅ **Newest packets on top** for better real-time monitoring
 - ✅ Packet details view with hex dump
 - ✅ Protocol identification (TCP, UDP, ICMP, ARP)
 - ✅ **Export to PCAP format** (Wireshark compatible)
 - ✅ Cross-platform: Linux (using libpcap) and Android (basic socket capture)
-- ✅ Clean, user-friendly GUI with Qt Widgets
+- ✅ Modern Qt Quick/QML interface
 - ✅ Thread-safe packet capture
+- ✅ Linux Cooked Capture (SLL2) support for "any" interface
 
 ## Requirements
 
 ### Linux
 - Qt5 (qt5-default or qtbase5-dev)
 - Qt5 Widgets
+- Qt5 Quick
+- Qt5 QuickControls2
 - Qt5 Network
+- Qt5 QML
 - libpcap-dev
 - qmake
 - g++ or clang++
@@ -68,11 +75,13 @@ sudo ./NetworkSniffer
 
 1. **Select Interface**: Choose a network interface from the dropdown (automatically detected)
    - Linux: Shows all available interfaces with IP addresses
-   - Option to capture on "any" interface
+   - Option to capture on "any" interface (captures from all interfaces simultaneously)
+   - When using "any", the Interface column shows the actual interface for each packet
 2. **Start Capture**: Click "Start" to begin capturing packets
-3. **View Packets**: Captured packets appear in the table with:
+3. **View Packets**: Captured packets appear in the table with (newest on top):
    - Packet number
-   - Timestamp
+   - Unix timestamp (seconds with 6 decimal precision)
+   - **Interface name** (actual interface where packet was captured)
    - Source IP:Port
    - Destination IP:Port
    - Protocol type
@@ -92,9 +101,17 @@ sudo ./NetworkSniffer
 
 ### Core Components
 
-- **MainWindow** (`mainwindow.h/cpp/ui`)
-  - Main GUI controller
-  - Handles user interactions
+- **main.qml** (`main.qml`)
+  - Qt Quick/QML declarative UI
+  - ApplicationWindow with MenuBar and ToolBar
+  - ListView for packet display
+  - SplitView for packet list and details
+  - Binds to C++ controller properties
+
+- **MainWindow** (`mainwindow.h/cpp`)
+  - QObject-based controller (not QMainWindow)
+  - Exposes Q_PROPERTY for QML binding
+  - Handles user interactions via Q_INVOKABLE methods
   - Manages packet display and file export
   - Auto-detects network interfaces using QNetworkInterface
 
@@ -105,7 +122,8 @@ sudo ./NetworkSniffer
   - Registers custom PacketInfo metatype for thread-safe signals
 
 - **PacketModel** (`packetmodel.h/cpp`)
-  - Qt AbstractTableModel for displaying packets
+  - QAbstractListModel for displaying packets in QML
+  - Custom role names for QML delegates
   - Efficient data management
   - Provides interface for packet retrieval and export
 
@@ -118,9 +136,23 @@ sudo ./NetworkSniffer
 
 ```
 Network Interface → libpcap/Socket → CaptureThread/Sniffer 
-    → PacketInfo (signal) → MainWindow → PacketModel → Table View
-                                      ↓
-                                  PCAP Export
+    → PacketInfo (signal) → MainWindow (Controller) → PacketModel
+                                      ↓                     ↓
+                                  PCAP Export          QML ListView
+```
+
+### Qt Quick Architecture
+
+```
+QGuiApplication
+    ↓
+QQmlApplicationEngine
+    ↓
+main.qml (UI Layer)
+    ↓
+MainWindow (Controller)
+    ↓
+PacketModel & PacketSniffer (Data Layer)
 ```
 
 ## Permissions
@@ -147,12 +179,14 @@ Add to AndroidManifest.xml:
 ```
 sniffer/
 ├── sniffer.pro           # Qt project file
-├── main.cpp              # Application entry point
-├── mainwindow.h/cpp/ui   # Main window implementation
+├── main.cpp              # Application entry point (QML setup)
+├── main.qml              # Qt Quick UI (declarative)
+├── mainwindow.h/cpp      # Controller (QObject-based)
 ├── packetsniffer.h/cpp   # Packet capture engine
-├── packetmodel.h/cpp     # Data model for packet display
+├── packetmodel.h/cpp     # Data model for QML ListView
 ├── resources.qrc         # Qt resources file
-└── README.md             # This file
+├── README.md             # This file
+└── QML_MIGRATION.md      # Qt Quick migration guide
 ```
 
 ## Limitations

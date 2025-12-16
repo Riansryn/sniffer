@@ -1,21 +1,34 @@
 #ifndef PACKETMODEL_H
 #define PACKETMODEL_H
 
-#include <QAbstractTableModel>
+#include <QAbstractListModel>
 #include <QList>
 #include "packetsniffer.h"
 
-class PacketModel : public QAbstractTableModel
+class PacketModel : public QAbstractListModel
 {
     Q_OBJECT
 
 public:
+    enum PacketRoles {
+        NumberRole = Qt::UserRole + 1,
+        TimestampRole,
+        TimestampSecsRole,
+        SourceRole,
+        DestinationRole,
+        SrcPortRole,
+        DstPortRole,
+        ProtocolRole,
+        LengthRole,
+        InterfaceRole,
+        InfoRole
+    };
+
     explicit PacketModel(QObject *parent = nullptr);
 
     int rowCount(const QModelIndex &parent = QModelIndex()) const override;
-    int columnCount(const QModelIndex &parent = QModelIndex()) const override;
     QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const override;
-    QVariant headerData(int section, Qt::Orientation orientation, int role = Qt::DisplayRole) const override;
+    QHash<int, QByteArray> roleNames() const override;
 
     void addPacket(const PacketInfo &packet);
     void clear();
@@ -24,7 +37,6 @@ public:
 
 private:
     QList<PacketInfo> packets;
-    QStringList headers;
 };
 
 #endif // PACKETMODEL_H

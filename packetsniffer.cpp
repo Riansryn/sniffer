@@ -6,11 +6,13 @@
 
 #ifdef LINUX_PLATFORM
 #include <pcap.h>
+#include <pcap/sll.h>
 #include <netinet/ip.h>
 #include <netinet/tcp.h>
 #include <netinet/udp.h>
 #include <netinet/if_ether.h>
 #include <arpa/inet.h>
+#include <net/if.h>
 #endif
 
 PacketSniffer::PacketSniffer(QObject *parent)
@@ -35,6 +37,8 @@ bool PacketSniffer::startCapture(const QString &interface)
     if (capturing) {
         return false;
     }
+
+    currentInterface = interface;
 
 #ifdef LINUX_PLATFORM
     // Use pcap for Linux
@@ -100,6 +104,7 @@ void PacketSniffer::parsePacket(const QByteArray &data, const QHostAddress &send
     PacketInfo packet;
     packet.number = ++packetCount;
     packet.timestamp = formatTimestamp();
+    packet.timestampSecs = formatTimestampSecs();
     packet.timestampMicros = QDateTime::currentDateTime().toMSecsSinceEpoch() * 1000;
     packet.source = sender.toString();
     packet.srcPort = port;
@@ -108,6 +113,7 @@ void PacketSniffer::parsePacket(const QByteArray &data, const QHostAddress &send
     packet.protocol = "UDP";
     packet.length = data.size();
     packet.info = QString("UDP packet from %1:%2").arg(sender.toString()).arg(port);
+    packet.interfaceName = currentInterface;
     packet.data = byteArrayToHex(data);
     packet.rawData = data;
 
@@ -117,6 +123,12 @@ void PacketSniffer::parsePacket(const QByteArray &data, const QHostAddress &send
 QString PacketSniffer::formatTimestamp()
 {
     return QDateTime::currentDateTime().toString("hh:mm:ss.zzz");
+}
+
+double PacketSniffer::formatTimestampSecs()
+{
+    QDateTime now = QDateTime::currentDateTime();
+    return now.toMSecsSinceEpoch() / 1000.0;
 }
 
 QString PacketSniffer::byteArrayToHex(const QByteArray &data)
@@ -169,6 +181,10 @@ void CaptureThread::run()
         return;
     }
     
+    // Check if we're using Linux cooked capture (for "any" interface)
+    int datalink = pcap_datalink(handle);
+    bool isLinuxCooked = (datalink == DLT_LINUX_SLL || datalink == DLT_LINUX_SLL2);
+    
     struct pcap_pkthdr header;
     const unsigned char *packet;
     int packetNumber = 0;
@@ -177,7 +193,7 @@ void CaptureThread::run()
         packet = pcap_next(handle, &header);
         
         if (packet != nullptr) {
-            PacketInfo info = parseRawPacket(packet, header.len, &header);
+            PacketInfo info = parseRawPacket(packet, header.len, &header, isLinuxCooked);
             info.number = ++packetNumber;
             emit packetCaptured(info);
         }
@@ -186,10 +202,11 @@ void CaptureThread::run()
     pcap_close(handle);
 }
 
-PacketInfo CaptureThread::parseRawPacket(const unsigned char *packet, int length, const struct pcap_pkthdr *header)
+PacketInfo CaptureThread::parseRawPacket(const unsigned char *packet, int length, const struct pcap_pkthdr *header, bool isLinuxCooked)
 {
     PacketInfo info;
     info.timestamp = QDateTime::currentDateTime().toString("hh:mm:ss.zzz");
+    info.timestampSecs = header->ts.tv_sec + (header->ts.tv_usec / 1000000.0);
     info.timestampMicros = (quint64)header->ts.tv_sec * 1000000 + header->ts.tv_usec;
     info.length = length;
     info.protocol = "Unknown";
@@ -202,12 +219,49 @@ PacketInfo CaptureThread::parseRawPacket(const unsigned char *packet, int length
     // Store raw packet data for PCAP export
     info.rawData = QByteArray(reinterpret_cast<const char*>(packet), length);
     
-    // Parse Ethernet header
-    struct ether_header *eth = (struct ether_header *)packet;
+    int offset = 0;
     
-    if (ntohs(eth->ether_type) == ETHERTYPE_IP) {
+    // Handle Linux cooked capture (for "any" interface)
+    if (isLinuxCooked) {
+        if (length < SLL2_HDR_LEN) {
+            info.interfaceName = interface;
+            return info;
+        }
+        
+        // Check if it's SLL2 (newer format with interface index)
+        struct sll2_header *sll2 = (struct sll2_header *)packet;
+        
+        // Get interface index (SLL2 format)
+        unsigned int ifindex = ntohl(sll2->sll2_if_index);
+        
+        // Get interface name from index
+        char ifname[IF_NAMESIZE];
+        if (if_indextoname(ifindex, ifname) != nullptr) {
+            info.interfaceName = QString(ifname);
+        } else {
+            info.interfaceName = QString("if%1").arg(ifindex);
+        }
+        
+        offset = SLL2_HDR_LEN;
+    } else {
+        info.interfaceName = interface;
+        offset = sizeof(struct ether_header);
+    }
+    
+    // Determine ethernet type
+    unsigned short etherType = 0;
+    if (isLinuxCooked) {
+        struct sll2_header *sll2 = (struct sll2_header *)packet;
+        etherType = ntohs(sll2->sll2_protocol);
+    } else {
+        struct ether_header *eth = (struct ether_header *)packet;
+        etherType = ntohs(eth->ether_type);
+    }
+    
+    // Parse IP layer
+    if (etherType == ETHERTYPE_IP) {
         // Parse IP header
-        struct ip *iph = (struct ip *)(packet + sizeof(struct ether_header));
+        struct ip *iph = (struct ip *)(packet + offset);
         
         char srcIP[INET_ADDRSTRLEN];
         char dstIP[INET_ADDRSTRLEN];
@@ -221,13 +275,13 @@ PacketInfo CaptureThread::parseRawPacket(const unsigned char *packet, int length
         
         if (iph->ip_p == IPPROTO_TCP) {
             info.protocol = "TCP";
-            struct tcphdr *tcph = (struct tcphdr *)(packet + sizeof(struct ether_header) + ipHeaderLen);
+            struct tcphdr *tcph = (struct tcphdr *)(packet + offset + ipHeaderLen);
             info.srcPort = ntohs(tcph->th_sport);
             info.dstPort = ntohs(tcph->th_dport);
             info.info = QString("TCP %1 → %2").arg(info.srcPort).arg(info.dstPort);
         } else if (iph->ip_p == IPPROTO_UDP) {
             info.protocol = "UDP";
-            struct udphdr *udph = (struct udphdr *)(packet + sizeof(struct ether_header) + ipHeaderLen);
+            struct udphdr *udph = (struct udphdr *)(packet + offset + ipHeaderLen);
             info.srcPort = ntohs(udph->uh_sport);
             info.dstPort = ntohs(udph->uh_dport);
             info.info = QString("UDP %1 → %2").arg(info.srcPort).arg(info.dstPort);
@@ -235,7 +289,7 @@ PacketInfo CaptureThread::parseRawPacket(const unsigned char *packet, int length
             info.protocol = "ICMP";
             info.info = "ICMP packet";
         }
-    } else if (ntohs(eth->ether_type) == ETHERTYPE_ARP) {
+    } else if (etherType == ETHERTYPE_ARP) {
         info.protocol = "ARP";
         info.info = "ARP packet";
     }

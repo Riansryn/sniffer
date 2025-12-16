@@ -1,9 +1,8 @@
 #include "packetmodel.h"
 
 PacketModel::PacketModel(QObject *parent)
-    : QAbstractTableModel(parent)
+    : QAbstractListModel(parent)
 {
-    headers << "No." << "Time" << "Source" << "Destination" << "Protocol" << "Length" << "Info";
 }
 
 int PacketModel::rowCount(const QModelIndex &parent) const
@@ -12,51 +11,51 @@ int PacketModel::rowCount(const QModelIndex &parent) const
     return packets.size();
 }
 
-int PacketModel::columnCount(const QModelIndex &parent) const
-{
-    Q_UNUSED(parent);
-    return headers.size();
-}
-
 QVariant PacketModel::data(const QModelIndex &index, int role) const
 {
     if (!index.isValid() || index.row() >= packets.size()) {
         return QVariant();
     }
 
-    if (role == Qt::DisplayRole) {
-        const PacketInfo &packet = packets.at(index.row());
-        
-        switch (index.column()) {
-        case 0: return packet.number;
-        case 1: return packet.timestamp;
-        case 2: return QString("%1:%2").arg(packet.source).arg(packet.srcPort);
-        case 3: return QString("%1:%2").arg(packet.destination).arg(packet.dstPort);
-        case 4: return packet.protocol;
-        case 5: return packet.length;
-        case 6: return packet.info;
-        default: return QVariant();
-        }
-    }
+    const PacketInfo &packet = packets.at(index.row());
     
-    return QVariant();
+    switch (role) {
+    case NumberRole: return packet.number;
+    case TimestampRole: return packet.timestamp;
+    case TimestampSecsRole: return packet.timestampSecs;
+    case SourceRole: return packet.source;
+    case DestinationRole: return packet.destination;
+    case SrcPortRole: return packet.srcPort;
+    case DstPortRole: return packet.dstPort;
+    case ProtocolRole: return packet.protocol;
+    case LengthRole: return packet.length;
+    case InterfaceRole: return packet.interfaceName;
+    case InfoRole: return packet.info;
+    default: return QVariant();
+    }
 }
 
-QVariant PacketModel::headerData(int section, Qt::Orientation orientation, int role) const
+QHash<int, QByteArray> PacketModel::roleNames() const
 {
-    if (role == Qt::DisplayRole && orientation == Qt::Horizontal) {
-        if (section >= 0 && section < headers.size()) {
-            return headers.at(section);
-        }
-    }
-    
-    return QVariant();
+    QHash<int, QByteArray> roles;
+    roles[NumberRole] = "number";
+    roles[TimestampRole] = "timestamp";
+    roles[TimestampSecsRole] = "timestampSecs";
+    roles[SourceRole] = "source";
+    roles[DestinationRole] = "destination";
+    roles[SrcPortRole] = "srcPort";
+    roles[DstPortRole] = "dstPort";
+    roles[ProtocolRole] = "protocol";
+    roles[LengthRole] = "length";
+    roles[InterfaceRole] = "interfaceName";
+    roles[InfoRole] = "info";
+    return roles;
 }
 
 void PacketModel::addPacket(const PacketInfo &packet)
 {
-    beginInsertRows(QModelIndex(), packets.size(), packets.size());
-    packets.append(packet);
+    beginInsertRows(QModelIndex(), 0, 0);
+    packets.prepend(packet);
     endInsertRows();
 }
 

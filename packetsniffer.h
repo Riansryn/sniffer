@@ -10,6 +10,7 @@
 struct PacketInfo {
     int number;
     QString timestamp;
+    double timestampSecs;
     QString source;
     QString destination;
     int srcPort;
@@ -17,6 +18,7 @@ struct PacketInfo {
     QString protocol;
     int length;
     QString info;
+    QString interfaceName;
     QString data;
     QByteArray rawData;
     quint64 timestampMicros;
@@ -47,9 +49,11 @@ private:
     bool capturing;
     int packetCount;
     QUdpSocket *udpSocket;
+    QString currentInterface;
     
     void parsePacket(const QByteArray &data, const QHostAddress &sender, quint16 port);
     QString formatTimestamp();
+    double formatTimestampSecs();
     QString byteArrayToHex(const QByteArray &data);
     
 #ifdef LINUX_PLATFORM
@@ -79,7 +83,7 @@ private:
     QString interface;
     bool stopRequested;
     
-    PacketInfo parseRawPacket(const unsigned char *packet, int length, const struct pcap_pkthdr *header);
+    PacketInfo parseRawPacket(const unsigned char *packet, int length, const struct pcap_pkthdr *header, bool isLinuxCooked);
 };
 #endif
 

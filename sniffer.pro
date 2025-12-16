@@ -1,6 +1,4 @@
-QT       += core gui network
-
-greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
+QT       += core gui widgets network qml quick quickcontrols2
 
 TARGET = NetworkSniffer
 TEMPLATE = app
@@ -17,9 +15,6 @@ HEADERS += \
     mainwindow.h \
     packetsniffer.h \
     packetmodel.h
-
-FORMS += \
-    mainwindow.ui
 
 # Platform-specific configurations
 unix:!android {

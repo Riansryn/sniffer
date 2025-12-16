@@ -1,16 +1,36 @@
 #include "mainwindow.h"
+#include "packetmodel.h"
 #include <QApplication>
+#include <QQmlApplicationEngine>
+#include <QQmlContext>
 
 int main(int argc, char *argv[])
 {
-    QApplication a(argc, argv);
+    QCoreApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
     
-    a.setApplicationName("Network Sniffer");
-    a.setApplicationVersion("1.0");
-    a.setOrganizationName("NetworkTools");
+    QApplication app(argc, argv);
     
-    MainWindow w;
-    w.show();
+    app.setApplicationName("Network Sniffer");
+    app.setApplicationVersion("1.0");
+    app.setOrganizationName("NetworkTools");
     
-    return a.exec();
+    QQmlApplicationEngine engine;
+    
+    // Create controller
+    MainWindow controller;
+    
+    // Make controller available to QML
+    engine.rootContext()->setContextProperty("controller", &controller);
+    
+    // Load QML
+    const QUrl url(QStringLiteral("qrc:/main.qml"));
+    QObject::connect(&engine, &QQmlApplicationEngine::objectCreated,
+                     &app, [url](QObject *obj, const QUrl &objUrl) {
+        if (!obj && url == objUrl)
+            QCoreApplication::exit(-1);
+    }, Qt::QueuedConnection);
+    
+    engine.load(url);
+    
+    return app.exec();
 }
